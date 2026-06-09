@@ -10,24 +10,24 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static Future<void> initialize() async {
-    tz.initializeTimeZones();
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const InitializationSettings settings = InitializationSettings(
-      android: androidSettings,
-    );
-    await _notifications.initialize(settings: settings);
-
-    if (await Permission.notification.isDenied) {
-      await Permission.notification.request();
+    try {
+      tz.initializeTimeZones();
+      const AndroidInitializationSettings androidSettings =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
+      const InitializationSettings settings = InitializationSettings(
+        android: androidSettings,
+      );
+      await _notifications.initialize(settings: settings);
+    } catch (e) {
+      debugPrint('Notify init error: $e');
     }
   }
 
-  static Future<void> requestPermissions() async {
-    // Разрешения уже запрашиваются в initialize
+  static Future<PermissionStatus> requestPermissions() async {
+    final status = await Permission.notification.request();
+    return status;
   }
 
-  /// Запланировать ежедневное напоминание в заданное время.
   static Future<void> scheduleDailyReminder(TimeOfDay time) async {
     await cancelAll();
 

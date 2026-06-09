@@ -1,12 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../database/db_service.dart';
-import '../models/food_item.dart';
 import '../services/notification_service.dart';
+import '../services/food_preload_service.dart';
 
 /// Экран-заставка: инициализация БД, загрузка начальных продуктов, проверка пользователя.
 class SplashScreen extends StatefulWidget {
@@ -26,12 +22,16 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _initializeApp(BuildContext context) async {
-    await NotificationService.initialize();
-    final db = DatabaseService.instance;
-    final hasPreloaded = await db.hasPreloadedFoodItems();
-    if (!hasPreloaded) {
-      await _preloadFoodItems(db);
+    try {
+      await NotificationService.initialize();
+    } catch (e) {
+      debugPrint('Notification init error: $e');
     }
+
+    final db = DatabaseService.instance;
+
+    FoodPreloadService().preloadIfNeeded();
+
     final user = await db.getUser();
 
     if (user != null && mounted) {
@@ -41,22 +41,6 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     final prefs = await SharedPreferences.getInstance();
-    final askedNotifications = prefs.getBool('asked_notifications') ?? false;
-    if (!askedNotifications) {
-      await NotificationService.requestPermissions();
-      await prefs.setBool('asked_notifications', true);
-      final enabled = prefs.getBool('notifications_enabled') ?? true;
-      if (enabled) {
-        final hour = prefs.getInt('notification_hour') ?? 20;
-        final minute = prefs.getInt('notification_minute') ?? 0;
-        await NotificationService.scheduleDailyReminder(
-          TimeOfDay(hour: hour, minute: minute),
-        );
-      }
-    }
-
-    await Future.delayed(const Duration(seconds: 2));
-
     final disclaimerShown = prefs.getBool('disclaimer_shown') ?? false;
     if (!disclaimerShown) {
       await showDialog(
@@ -86,41 +70,14 @@ class _SplashScreenState extends State<SplashScreen> {
       );
     }
 
+    await Future.delayed(const Duration(milliseconds: 300));
+
     if (mounted) {
       if (user == null) {
         Navigator.pushReplacementNamed(context, '/onboarding');
       } else {
         Navigator.pushReplacementNamed(context, '/home');
       }
-    }
-  }
-
-  Future<void> _preloadFoodItems(DatabaseService db) async {
-    try {
-      final jsonString = await rootBundle.loadString(
-        'seed_data/initial_food.json',
-      );
-      final List<dynamic> jsonList = jsonDecode(jsonString);
-
-      final List<FoodItem> foodItems = [];
-      for (var json in jsonList) {
-        foodItems.add(
-          FoodItem(
-            name: json['name'],
-            nameLower: json['name'].toLowerCase(),
-            calories: (json['calories'] as num).toDouble(),
-            protein: (json['protein'] as num).toDouble(),
-            fat: (json['fat'] as num).toDouble(),
-            carbs: (json['carbs'] as num).toDouble(),
-            isCustom: json['is_custom'] ?? false,
-          ),
-        );
-      }
-
-      await db.insertFoodItemsBatch(foodItems);
-      debugPrint('Загружено ${foodItems.length} продуктов');
-    } catch (e) {
-      debugPrint('Ошибка загрузки начальных продуктов: $e');
     }
   }
 

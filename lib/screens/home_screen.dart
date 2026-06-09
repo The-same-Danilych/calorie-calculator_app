@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../database/db_service.dart';
 import '../models/diary_entry.dart';
@@ -6,6 +8,7 @@ import '../models/user.dart';
 import '../services/diary_service.dart';
 import '../services/user_service.dart';
 import '../services/suggestion_service.dart';
+import '../services/notification_service.dart';
 import 'add_food_screen.dart';
 
 /// Главный экран дневника с отображением прогресса и списком приёмов пищи.
@@ -24,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _daySummary;
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = true;
+  bool _notificationsHandled = false;
 
   @override
   void initState() {
@@ -40,11 +44,57 @@ class _HomeScreenState extends State<HomeScreen> {
           _user!.id!,
           _selectedDate,
         );
+
+        if (!_notificationsHandled) {
+          _notificationsHandled = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _requestNotificationsIfNeeded();
+          });
+        }
       }
     } catch (e) {
       debugPrint('Ошибка загрузки: $e');
     }
     setState(() => _isLoading = false);
+  }
+
+  Future<void> _requestNotificationsIfNeeded() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final asked = prefs.getBool('asked_notifications') ?? false;
+
+      final status = await Permission.notification.status;
+
+      if (status.isGranted) {
+        final enabled = prefs.getBool('notifications_enabled') ?? true;
+        if (enabled) {
+          final hour = prefs.getInt('notification_hour') ?? 20;
+          final minute = prefs.getInt('notification_minute') ?? 0;
+          await NotificationService.scheduleDailyReminder(
+            TimeOfDay(hour: hour, minute: minute),
+          );
+        }
+        return;
+      }
+
+      if (!asked) {
+        final result = await NotificationService.requestPermissions();
+        await prefs.setBool('asked_notifications', true);
+
+        if (result == PermissionStatus.granted) {
+          final enabled = prefs.getBool('notifications_enabled') ?? true;
+          if (enabled) {
+            final hour = prefs.getInt('notification_hour') ?? 20;
+            final minute = prefs.getInt('notification_minute') ?? 0;
+            await NotificationService.scheduleDailyReminder(
+              TimeOfDay(hour: hour, minute: minute),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Ошибка при настройке уведомлений: $e');
+    }
   }
 
   void _refresh() {
