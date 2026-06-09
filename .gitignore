@@ -58,3 +58,5 @@ pubspec.lock
 
 ios/build/
 ios/Pods/
+
+key.properties

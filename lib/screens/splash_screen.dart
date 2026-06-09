@@ -15,6 +15,8 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  String? _userName;
+
   @override
   void initState() {
     super.initState();
@@ -31,6 +33,12 @@ class _SplashScreenState extends State<SplashScreen> {
       await _preloadFoodItems(db);
     }
     final user = await db.getUser();
+
+    if (user != null && mounted) {
+      setState(() {
+        _userName = user.name;
+      });
+    }
 
     final prefs = await SharedPreferences.getInstance();
     final askedNotifications = prefs.getBool('asked_notifications') ?? false;
@@ -89,7 +97,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _preloadFoodItems(DatabaseService db) async {
     try {
-      final jsonString = await rootBundle.loadString('seed_data/initial_food.json');
+      final jsonString = await rootBundle.loadString(
+        'seed_data/initial_food.json',
+      );
       final List<dynamic> jsonList = jsonDecode(jsonString);
 
       final List<FoodItem> foodItems = [];
@@ -118,6 +128,9 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.sizeOf(context);
     final imageSize = screenSize.height * 0.1;
+    final greetingText = _userName == null
+        ? 'Как вы себя чувствуете?'
+        : 'Как вы себя чувствуете, $_userName?';
 
     return Scaffold(
       backgroundColor: Colors.green[700],
@@ -139,9 +152,9 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
             const SizedBox(height: 15),
-            const Text(
-              'Как вы себя чувствуете?',
-              style: TextStyle(fontSize: 24, color: Colors.white),
+            Text(
+              greetingText,
+              style: const TextStyle(fontSize: 24, color: Colors.white),
             ),
             const SizedBox(height: 20),
             const CircularProgressIndicator(color: Colors.white),
