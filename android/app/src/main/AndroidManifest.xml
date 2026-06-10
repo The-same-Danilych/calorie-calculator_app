@@ -6,8 +6,8 @@
     <application
         android:label="Трекер БЖУ"
         android:name="androidx.multidex.MultiDexApplication"
-        android:icon="@mipmap/launcher_icon">
-        android:enableOnBackInvokedCallback="true"
+        android:icon="@mipmap/launcher_icon"
+        android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

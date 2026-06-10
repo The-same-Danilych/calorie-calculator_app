@@ -28,7 +28,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _daySummary;
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = true;
-  bool _notificationsHandled = false;
   List<Suggestion> _currentSuggestions = [];
 
   @override
@@ -49,12 +48,9 @@ class _HomeScreenState extends State<HomeScreen> {
           _selectedDate,
         );
 
-        if (!_notificationsHandled) {
-          _notificationsHandled = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _requestNotificationsIfNeeded();
-          });
-        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _requestNotificationsIfNeeded();
+        });
       }
     } catch (e) {
       debugPrint('Ошибка загрузки: $e');
@@ -67,38 +63,34 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _requestNotificationsIfNeeded() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final asked = prefs.getBool('asked_notifications') ?? false;
-      final status = await Permission.notification.status;
+      final status = await NotificationService.getPermissionStatus();
 
       if (status.isGranted) {
-        final enabled = prefs.getBool('notifications_enabled') ?? true;
-        if (enabled) {
-          final hour = prefs.getInt('notification_hour') ?? 20;
-          final minute = prefs.getInt('notification_minute') ?? 0;
-          await NotificationService.scheduleDailyReminder(
-            TimeOfDay(hour: hour, minute: minute),
-          );
-        }
+        await _scheduleIfEnabled(prefs);
         return;
       }
 
-      if (!asked) {
-        final result = await NotificationService.requestPermissions();
-        await prefs.setBool('asked_notifications', true);
-        if (result == PermissionStatus.granted) {
-          final enabled = prefs.getBool('notifications_enabled') ?? true;
-          if (enabled) {
-            final hour = prefs.getInt('notification_hour') ?? 20;
-            final minute = prefs.getInt('notification_minute') ?? 0;
-            await NotificationService.scheduleDailyReminder(
-              TimeOfDay(hour: hour, minute: minute),
-            );
-          }
-        }
+      if (status.isPermanentlyDenied) {
+        return;
+      }
+
+      final granted = await NotificationService.requestPermissions();
+      if (granted) {
+        await _scheduleIfEnabled(prefs);
       }
     } catch (e) {
       debugPrint('Ошибка при настройке уведомлений: $e');
     }
+  }
+
+  Future<void> _scheduleIfEnabled(SharedPreferences prefs) async {
+    final enabled = prefs.getBool('notifications_enabled') ?? true;
+    if (!enabled) return;
+    final hour = prefs.getInt('notification_hour') ?? 20;
+    final minute = prefs.getInt('notification_minute') ?? 0;
+    await NotificationService.scheduleDailyReminder(
+      TimeOfDay(hour: hour, minute: minute),
+    );
   }
 
   void _refresh() {
