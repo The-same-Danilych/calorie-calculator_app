@@ -70,7 +70,7 @@ class _SplashScreenState extends State<SplashScreen> {
       );
     }
 
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(seconds: 1));
 
     if (mounted) {
       if (user == null) {

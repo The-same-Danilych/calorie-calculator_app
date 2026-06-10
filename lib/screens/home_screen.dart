@@ -29,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = true;
   bool _notificationsHandled = false;
+  List<Suggestion> _currentSuggestions = [];
 
   @override
   void initState() {
@@ -37,10 +38,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
     try {
       _user = await _userService.getCurrentUser();
-      if (_user != null) {
+      if (_user != null && mounted) {
         _daySummary = await _diaryService.getDaySummary(
           _user!.id!,
           _selectedDate,
@@ -56,7 +59,9 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       debugPrint('Ошибка загрузки: $e');
     }
-    setState(() => _isLoading = false);
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _requestNotificationsIfNeeded() async {
@@ -100,6 +105,40 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadData();
   }
 
+  String _getFormattedDate() {
+    final now = DateTime.now();
+    final isToday =
+        _selectedDate.year == now.year &&
+        _selectedDate.month == now.month &&
+        _selectedDate.day == now.day;
+
+    final monthNames = [
+      'января',
+      'февраля',
+      'марта',
+      'апреля',
+      'мая',
+      'июня',
+      'июля',
+      'августа',
+      'сентября',
+      'октября',
+      'ноября',
+      'декабря',
+    ];
+    final day = _selectedDate.day;
+    final month = monthNames[_selectedDate.month - 1];
+    final year = _selectedDate.year;
+
+    String prefix = '';
+    if (isToday)
+      prefix = 'Сегодня, ';
+    else if (_selectedDate == now.subtract(const Duration(days: 1)))
+      prefix = 'Вчера, ';
+
+    return '$prefix$day $month $year';
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -116,108 +155,127 @@ class _HomeScreenState extends State<HomeScreen> {
         {'calories': 0.0, 'protein': 0.0, 'fat': 0.0, 'carbs': 0.0};
     final meals = _daySummary?['meals'] ?? {};
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Дневник'),
-        centerTitle: true,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Дневник'),
+          centerTitle: true,
+          leading: Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
           ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: () => _selectDate(),
-          ),
-        ],
-      ),
-      drawer: Drawer(
-        child: Column(
-          children: [
-            Container(
-              height: 80,
-              color: Colors.green,
-              alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.only(left: 16),
-              child: const Text(
-                'Меню',
-                style: TextStyle(fontSize: 20, color: Colors.white),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Изменить профиль'),
-              onTap: () async {
-                Navigator.pop(context);
-                await Navigator.pushNamed(context, '/edit_profile');
-                _refresh();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.analytics),
-              title: const Text('Анализ'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/analysis');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_forever),
-              title: const Text('Удалить аккаунт'),
-              onTap: () => _confirmDeleteAccount(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Настройки'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/settings');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.info),
-              title: const Text('О приложении'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/about');
-              },
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.calendar_today),
+              onPressed: () => _selectDate(),
             ),
           ],
         ),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _loadData,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+        drawer: Drawer(
           child: Column(
             children: [
-              _buildProgressCard(totals),
-              const SizedBox(height: 16),
-              ...['breakfast', 'lunch', 'dinner', 'snack'].map(
-                (mealType) =>
-                    _buildMealSection(mealType, meals[mealType] ?? []),
+              Container(
+                height: 80,
+                color: Colors.green,
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.only(left: 16),
+                child: const Text(
+                  'Меню',
+                  style: TextStyle(fontSize: 20, color: Colors.white),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.person),
+                title: const Text('Изменить профиль'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await Navigator.pushNamed(context, '/edit_profile');
+                  _refresh();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.analytics),
+                title: const Text('Анализ'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/analysis');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_forever),
+                title: const Text('Удалить аккаунт'),
+                onTap: () => _confirmDeleteAccount(context),
+              ),
+              ListTile(
+                leading: const Icon(Icons.settings),
+                title: const Text('Настройки'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/settings');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.info),
+                title: const Text('О приложении'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/about');
+                },
               ),
             ],
           ),
         ),
+        body: RefreshIndicator(
+          onRefresh: _loadData,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 80),
+            child: Column(
+              children: [
+                _buildProgressCard(totals),
+                const SizedBox(height: 8),
+                // Подпись выбранной даты
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _getFormattedDate(),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...['breakfast', 'lunch', 'dinner', 'snack'].map(
+                  (mealType) =>
+                      _buildMealSection(mealType, meals[mealType] ?? []),
+                ),
+              ],
+            ),
+          ),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () async {
+            await Navigator.pushNamed(
+              context,
+              '/add_food',
+              arguments: _selectedDate,
+            );
+            _refresh();
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('Добавить еду'),
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await Navigator.pushNamed(
-            context,
-            '/add_food',
-            arguments: _selectedDate,
-          );
-          _refresh();
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('Добавить еду'),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -442,7 +500,7 @@ class _HomeScreenState extends State<HomeScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
     );
-    if (picked != null && picked != _selectedDate) {
+    if (picked != null && picked != _selectedDate && mounted) {
       setState(() => _selectedDate = picked);
       _loadData();
     }
@@ -491,15 +549,16 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    final suggestions = await _suggestionService.getSuggestions(
+    _currentSuggestions = await _suggestionService.getSuggestions(
       remainingCalories,
     );
-    if (suggestions.isEmpty) {
+
+    if (_currentSuggestions.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Упс! Не удалось подобрать продукт. Попробуйте позже.',
+              'Не удалось подобрать продукт. Попробуйте изменить остаток или добавьте продукт вручную.',
             ),
           ),
         );
@@ -507,34 +566,36 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    await showDialog(
+    _showSuggestionDialog();
+  }
+
+  void _showSuggestionDialog() {
+    showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Подберите продукт'),
+        title: const Text('Подходящий продукт'),
         content: SizedBox(
           width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: suggestions.length,
-            itemBuilder: (ctx, index) {
-              final s = suggestions[index];
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: _currentSuggestions.map((suggestion) {
               return ListTile(
-                title: Text(s.foodItem.name),
+                title: Text(suggestion.foodItem.name),
                 subtitle: Text(
-                  '${s.grams.toStringAsFixed(0)} г · ${s.calories.toStringAsFixed(0)} ккал',
+                  '${suggestion.grams.toStringAsFixed(0)} г · ${suggestion.calories.toStringAsFixed(0)} ккал',
                 ),
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await _addSuggestionToDiary(s);
+                  await _addSuggestionToDiary(suggestion);
                 },
               );
-            },
+            }).toList(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Отмена'),
+            child: const Text('Закрыть'),
           ),
         ],
       ),
@@ -551,7 +612,7 @@ class _HomeScreenState extends State<HomeScreen> {
       grams: suggestion.grams,
       mealType: 'snack',
       eatenAt: _selectedDate,
-      calories: suggestion.calories,
+      calories: (suggestion.grams / 100) * suggestion.foodItem.calories,
       protein: (suggestion.grams / 100) * suggestion.foodItem.protein,
       fat: (suggestion.grams / 100) * suggestion.foodItem.fat,
       carbs: (suggestion.grams / 100) * suggestion.foodItem.carbs,

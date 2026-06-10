@@ -1,6 +1,7 @@
 import '../database/db_service.dart';
 import '../models/food_item.dart';
 
+/// Подбор еды закрывающей необходимую калорийность 
 class SuggestionService {
   final DatabaseService _db = DatabaseService.instance;
 
@@ -23,7 +24,20 @@ class SuggestionService {
     'wine',
     'beer',
     'cocktail',
+    'ликер',
+    'наливка',
+    'абсент',
+    'джин',
+    'текила',
+    'кальвадос',
+    'граппа',
+    'арманьяк',
+    'сидр',
+    'пунш',
+    'глинтвейн',
   ];
+
+  static const double maxGramsPerPortion = 500.0;
 
   Future<List<Suggestion>> getSuggestions(
     double remainingCalories, {
@@ -39,7 +53,11 @@ class SuggestionService {
     final suggestions = <Suggestion>[];
 
     for (final food in allFoods) {
+      if (food.calories <= 0) continue;
+
       final gramsNeeded = (remainingCalories / food.calories) * 100;
+
+      if (gramsNeeded > maxGramsPerPortion) continue;
       if (gramsNeeded < 10) continue;
 
       final actualCalories = (gramsNeeded / 100) * food.calories;

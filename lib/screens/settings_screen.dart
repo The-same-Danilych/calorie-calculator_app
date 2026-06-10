@@ -25,18 +25,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
-      final hour = prefs.getInt('notification_hour') ?? 20;
-      final minute = prefs.getInt('notification_minute') ?? 0;
-      _notificationTime = TimeOfDay(hour: hour, minute: minute);
-    });
+    if (mounted) {
+      setState(() {
+        _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
+        final hour = prefs.getInt('notification_hour') ?? 20;
+        final minute = prefs.getInt('notification_minute') ?? 0;
+        _notificationTime = TimeOfDay(hour: hour, minute: minute);
+      });
+    }
   }
 
   Future<void> _saveNotificationsEnabled(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('notifications_enabled', value);
-    setState(() => _notificationsEnabled = value);
+    if (mounted) setState(() => _notificationsEnabled = value);
     if (value) {
       await NotificationService.scheduleDailyReminder(_notificationTime);
     } else {
@@ -49,7 +51,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       initialTime: _notificationTime,
     );
-    if (newTime != null) {
+    if (newTime != null && mounted) {
       setState(() => _notificationTime = newTime);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('notification_hour', newTime.hour);

@@ -31,7 +31,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _loadUser() async {
     _user = await _userService.getCurrentUser();
-    if (_user != null) {
+    if (_user != null && mounted) {
       _weightController.text = _user!.weightKg.toString();
       _heightController.text = _user!.heightCm.toString();
       _selectedActivity = _user!.activity;

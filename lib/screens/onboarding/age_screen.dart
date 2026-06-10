@@ -29,7 +29,7 @@ class _AgeScreenState extends State<AgeScreen> {
         );
       },
     );
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() => _selectedAge = picked);
     }
   }

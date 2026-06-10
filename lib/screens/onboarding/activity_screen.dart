@@ -50,17 +50,20 @@ class _ActivityScreenState extends State<ActivityScreen> {
             ),
             const SizedBox(height: 40),
             Expanded(
-              child: RadioGroup<String>(
-                groupValue: _selectedActivity,
-                onChanged: (value) => setState(() => _selectedActivity = value),
-                child: Column(
-                  children: activities.entries.map((entry) {
-                    return RadioListTile<String>(
-                      title: Text(entry.value),
-                      value: entry.key,
-                      activeColor: Colors.green,
-                    );
-                  }).toList(),
+              child: SingleChildScrollView(
+                child: RadioGroup<String>(
+                  groupValue: _selectedActivity,
+                  onChanged: (value) =>
+                      setState(() => _selectedActivity = value),
+                  child: Column(
+                    children: activities.entries.map((entry) {
+                      return RadioListTile<String>(
+                        title: Text(entry.value),
+                        value: entry.key,
+                        activeColor: Colors.green,
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
             ),

@@ -20,9 +20,11 @@ class _AboutScreenState extends State<AboutScreen> {
 
   Future<void> _loadVersion() async {
     final info = await PackageInfo.fromPlatform();
-    setState(() {
-      _version = '${info.version}+${info.buildNumber}';
-    });
+    if (mounted) {
+      setState(() {
+        _version = '${info.version}+${info.buildNumber}';
+      });
+    }
   }
 
   @override

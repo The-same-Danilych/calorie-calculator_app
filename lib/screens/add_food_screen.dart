@@ -62,7 +62,7 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
 
   Future<void> _loadFoodItem(int id) async {
     final food = await _foodService.getFoodItem(id);
-    if (food != null) {
+    if (mounted && food != null) {
       setState(() {
         _selectedFood = food;
         _nameController.text = food.name;
@@ -91,12 +91,14 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
       setState(() => _searchResults.clear());
       return;
     }
-    setState(() => _isSearching = true);
+    if (mounted) setState(() => _isSearching = true);
     final results = await _foodService.searchFood(query);
-    setState(() {
-      _searchResults = results;
-      _isSearching = false;
-    });
+    if (mounted) {
+      setState(() {
+        _searchResults = results;
+        _isSearching = false;
+      });
+    }
   }
 
   void _selectFood(FoodItem food) {
@@ -185,7 +187,8 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
 
     bool hasChanges = true;
     if (_selectedFood != null) {
-      hasChanges = _selectedFood!.name != newName ||
+      hasChanges =
+          _selectedFood!.name != newName ||
           _selectedFood!.calories != calories ||
           _selectedFood!.protein != protein ||
           _selectedFood!.fat != fat ||
@@ -209,9 +212,9 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
 
     final user = await _userService.getCurrentUser();
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Пользователь не найден')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Пользователь не найден')));
       return;
     }
 
@@ -260,7 +263,7 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
         actions: [
           if (_selectedFood != null)
             IconButton(
-              icon: const Icon(Icons.clear),
+              icon: const Icon(Icons.cleaning_services),
               onPressed: _clearSelectedFood,
               tooltip: 'Очистить',
             ),
@@ -322,7 +325,9 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
               const SizedBox(height: 16),
               TextField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Название продукта*'),
+                decoration: const InputDecoration(
+                  labelText: 'Название продукта*',
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -349,7 +354,9 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                   Expanded(
                     child: TextField(
                       controller: _proteinController,
-                      decoration: const InputDecoration(labelText: 'Белки (г)*'),
+                      decoration: const InputDecoration(
+                        labelText: 'Белки (г)*',
+                      ),
                       keyboardType: TextInputType.number,
                     ),
                   ),
@@ -369,14 +376,19 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                   Expanded(
                     child: TextField(
                       controller: _carbsController,
-                      decoration: const InputDecoration(labelText: 'Углеводы (г)*'),
+                      decoration: const InputDecoration(
+                        labelText: 'Углеводы (г)*',
+                      ),
                       keyboardType: TextInputType.number,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              const Text('Приём пищи', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Приём пищи',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
               SegmentedButton<String>(
                 segments: const [
@@ -390,7 +402,8 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                     setState(() => _selectedMeal = newSelection.first),
               ),
               const SizedBox(height: 24),
-              if (_isFormValid && double.tryParse(_gramsController.text) != null)
+              if (_isFormValid &&
+                  double.tryParse(_gramsController.text) != null)
                 Card(
                   color: Colors.green.shade50,
                   child: Padding(
