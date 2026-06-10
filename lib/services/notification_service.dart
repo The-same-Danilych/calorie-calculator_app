@@ -53,13 +53,14 @@ class NotificationService {
         channelDescription: 'Напоминание о заполнении дневника питания',
         importance: Importance.high,
         priority: Priority.high,
+        icon: '@drawable/notification_icon',
       ),
     );
 
     await _notifications.zonedSchedule(
       id: 0,
-      title: 'Не забудьте про дневник!',
-      body: 'Заполните сегодняшний рацион питания',
+      title: 'Трекер БЖУ',
+      body: 'Не забудьте заполнить сегодняшний рацион питания',
       scheduledDate: scheduled,
       notificationDetails: notificationDetails,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,

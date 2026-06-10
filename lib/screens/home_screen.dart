@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -62,7 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final asked = prefs.getBool('asked_notifications') ?? false;
-
       final status = await Permission.notification.status;
 
       if (status.isGranted) {
@@ -80,7 +80,6 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!asked) {
         final result = await NotificationService.requestPermissions();
         await prefs.setBool('asked_notifications', true);
-
         if (result == PermissionStatus.granted) {
           final enabled = prefs.getBool('notifications_enabled') ?? true;
           if (enabled) {
@@ -308,7 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Осталось: ${(calGoal - totals['calories']!).toInt()} ккал',
+                      'Осталось: ${max(0, calGoal - totals['calories']!).toInt()} ккал',
                       style: const TextStyle(fontSize: 14, color: Colors.grey),
                     ),
                     const SizedBox(height: 12),
