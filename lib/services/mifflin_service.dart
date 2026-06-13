@@ -17,7 +17,6 @@ class MifflinService {
   static const double minCaloriesMale = 1500;
   static const double minCaloriesFemale = 1200;
 
-  /// Базовый уровень метаболизма (BMR).
   static double calculateBMR({
     required String gender,
     required double weightKg,
@@ -31,7 +30,6 @@ class MifflinService {
     }
   }
 
-  /// Общий расход энергии (TDEE).
   static double calculateTDEE({
     required String gender,
     required double weightKg,
@@ -49,7 +47,6 @@ class MifflinService {
     return bmr * multiplier;
   }
 
-  /// Расчёт дневных целей: калории, белки, жиры, углеводы.
   static Map<String, double> calculateGoals({
     required String gender,
     required double weightKg,
